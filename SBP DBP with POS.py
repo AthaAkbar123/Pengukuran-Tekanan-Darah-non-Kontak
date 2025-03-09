@@ -54,7 +54,7 @@ def cpu_POS(signal, **kargs):
     return H
 
 # Bandpass filter function
-def bandpass_filter(signal, lowcut=0.5, highcut=2.0, fs=FPS, order=5):
+def bandpass_filter(signal, lowcut=0.7, highcut=2.2, fs=FPS, order=5):
     nyquist = 0.5 * fs
     low = lowcut / nyquist
     high = highcut / nyquist
@@ -81,10 +81,20 @@ rgb_signals = rgb_signals.reshape(1, 3, -1)
 rppg_signal = cpu_POS(rgb_signals, fps=FPS).reshape(-1)
 
 # Calculate SBP & DBP
-def estimate_bp(E_peak, E_valley, bmi):
-    SBP = 23.7889 + 95.4335 * E_peak + 4.5958 * bmi - 5.109 * E_peak * bmi
-    DBP = -17.3772 - 115.1747 * E_valley + 4.0251 * bmi + 5.2825 * E_valley * bmi
+def estimate_bp(e_peak, e_valley, bmi):
+    SBP = 23.7889 + 95.4335 * e_peak + 4.5958 * bmi - 5.109 * e_peak * bmi
+    DBP = -17.3772 - 115.1747 * e_valley + 4.0251 * bmi + 5.2825 * e_valley * bmi
     return SBP, DBP
+
+# E peak dan E valley
+def get_e_value(signal, peak, valley):
+    h_d = signal[peak]
+    h_l = signal[valley]
+    n_1 = len(h_d)
+    n_2 = len(h_l)
+    e_peak = np.sum(h_d) / n_1 if n_1 != 0 else 0
+    e_valley = np.sum(h_l) / n_2 if n_2 != 0 else 0
+    return e_peak, e_valley
 
 # Main function
 def main():
@@ -141,9 +151,9 @@ def main():
             valleys, _ = find_peaks(-filtered_rppg_signal)
             
             if len(peaks) > 0 and len(valleys) > 0:
-                E_peak = np.mean(filtered_rppg_signal[peaks])
-                E_valley = np.mean(filtered_rppg_signal[valleys])
-                SBP, DBP = estimate_bp(E_peak, E_valley, BMI)
+                e_peak = np.mean(filtered_rppg_signal[peaks])
+                e_valley = np.mean(filtered_rppg_signal[valleys])
+                SBP, DBP = estimate_bp(e_peak, e_valley, BMI)
                 print(f"{roi_name} - Estimated BP: SBP = {SBP:.1f} mmHg, DBP = {DBP:.1f} mmHg")
             
             plt.figure(figsize=(15, 5))
