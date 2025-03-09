@@ -21,38 +21,6 @@ def get_roi_definitions():
         'Dagu': ([210, 430, 150, 379, 152], (255, 0, 255)),
     }
 
-# Define POS
-def cpu_POS(signal, **kargs):
-    eps = 10**-9
-    X = signal
-    e, c, f = X.shape
-    w = int(1.6 * kargs['fps'])   # window length
-
-    P = np.array([[0, 1, -1], [-2, 1, 1]])  # Proyeksi matriks
-    Q = np.stack([P for _ in range(e)], axis=0)
-
-    H = np.zeros((e, f))
-    for n in np.arange(w, f):
-        m = n - w + 1
-        Cn = X[:, :, m:(n + 1)]
-        M = 1.0 / (np.mean(Cn, axis=2) + eps)
-        M = np.expand_dims(M, axis=2)
-        Cn = np.multiply(M, Cn)
-
-        S = np.dot(Q, Cn)[0]
-        S = np.swapaxes(S, 0, 1)
-        
-        S1 = S[:, 0, :]
-        S2 = S[:, 1, :]
-        alpha = np.std(S1, axis=1) / (eps + np.std(S2, axis=1))
-        alpha = np.expand_dims(alpha, axis=1)
-        
-        Hn = np.add(S1, alpha * S2)
-        Hnm = Hn - np.expand_dims(np.mean(Hn, axis=1), axis=1)
-        H[:, m:(n + 1)] = np.add(H[:, m:(n + 1)], Hnm)
-
-    return H
-
 # Bandpass filter function
 def bandpass_filter(signal, lowcut=0.5, highcut=2.0, fs=FPS, order=5):
     nyquist = 0.5 * fs
@@ -69,16 +37,9 @@ def extract_roi_coordinates(landmarks, indices, image_width, image_height):
     min_y, max_y = min(pt[1] for pt in coords), max(pt[1] for pt in coords)
     return max(0, min_x), max(0, min_y), min(image_width, max_x), min(image_height, max_y)
 
- # Variabel untuk menyimpan sinyal wajah secara keseluruhan
-r_signals, g_signals, b_signals = [], [], []
-# face_images = []  # Menyimpan gambar wajah yang dipotong
-
 # Compute rPPG signal
-rgb_signals = np.array([r_signals, g_signals, b_signals])
-rgb_signals = rgb_signals.reshape(1, 3, -1)
-
-# Proses rPPG dengan metode POS
-rppg_signal = cpu_POS(rgb_signals, fps=FPS).reshape(-1)
+def compute_rppg_signal(r_signal, g_signal, b_signal):
+    return (r_signal + g_signal + b_signal) / 3
 
 # Calculate SBP & DBP
 def estimate_bp(E_peak, E_valley, bmi):
@@ -133,7 +94,7 @@ def main():
         b_signal = np.array(rgb_signals_per_roi[roi_name]['B'])
 
         if len(r_signal) > 10 and len(g_signal) > 10 and len(b_signal) > 10:
-            rppg_signal = rppg_signal(r_signal, g_signal, b_signal)
+            rppg_signal = compute_rppg_signal(r_signal, g_signal, b_signal)
             filtered_rppg_signal = bandpass_filter(rppg_signal)
 
             # Find peaks and valleys
