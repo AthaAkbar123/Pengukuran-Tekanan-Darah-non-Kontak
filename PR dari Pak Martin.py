@@ -1,7 +1,6 @@
 import numpy as np
 import mediapipe as mp
 import cv2
-import matplotlib.pyplot as plt
 import os
 from glob import glob
 
@@ -65,39 +64,31 @@ def main():
                         rgb_signals_per_roi[roi_name]['R'].append(np.mean(roi[:, :, 0]))  # Red Channel
                         rgb_signals_per_roi[roi_name]['G'].append(np.mean(roi[:, :, 1]))  # Green Channel
                         rgb_signals_per_roi[roi_name]['B'].append(np.mean(roi[:, :, 2]))  # Blue Channel
-                    # Gambar bounding box untuk setiap ROI
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
 
-        # Tampilkan gambar dengan bounding box wajah
-        cv2.imshow('Frame', frame)
-        if cv2.waitKey(500) & 0xFF == ord('q'):  # Tunggu 500 ms per gambar
-            break
-    
-    cv2.destroyAllWindows()
-    
-    # Visualisasi sinyal RGB (Red, Green, Blue) untuk setiap ROI dan simpan ke folder output
+    # Simpan sinyal RGB sebagai file .npy
     for roi_name in rgb_signals_per_roi:
-        print(f"Processing ROI: {roi_name}")
         r_signal = np.array(rgb_signals_per_roi[roi_name]['R'])
         g_signal = np.array(rgb_signals_per_roi[roi_name]['G'])
         b_signal = np.array(rgb_signals_per_roi[roi_name]['B'])
 
         if len(r_signal) > 10 and len(g_signal) > 10 and len(b_signal) > 10:
-            # Visualisasi sinyal RGB dari setiap ROI
-            plt.figure(figsize=(15, 5))
-            plt.plot(r_signal, label="Red Channel", color='red', alpha=0.8)
-            plt.plot(g_signal, label="Green Channel", color='green', alpha=0.8)
-            plt.plot(b_signal, label="Blue Channel", color='blue', alpha=0.8)
-            plt.title(f"{roi_name} - RGB Signals")
-            plt.xlabel("Frames")
-            plt.ylabel("Intensity")
-            plt.legend()
-            plt.grid(True)
+            # Gabungkan sinyal RGB menjadi satu array
+            rgb_signals = np.stack((r_signal, g_signal, b_signal), axis=1)  # Shape: (frames, 3)
             
-            # Menyimpan grafik ke folder output
-            plot_path = os.path.join(OUTPUT_FOLDER, f"{roi_name}_rgb_signals.png")
-            plt.savefig(plot_path)  # Simpan grafik ke dalam file PNG
-            plt.close()  # Menutup plot setelah disimpan
+            # Simpan file dalam format .npy
+            npy_path = os.path.join(OUTPUT_FOLDER, f"{roi_name}_rgb_signals.npy")
+            np.save(npy_path, rgb_signals)
+            print(f"Data untuk {roi_name} telah disimpan dalam {npy_path}")
 
 if __name__ == '__main__':
     main()
+
+
+# Untuk membaca kembali file npy yang sudah disimpan, gunakan kode berikut:
+
+# # Load data
+# data = np.load("output_results/Jidat_rgb_signals.npy")
+
+# # Tampilkan isi
+# print(data.shape)  # Output: (jumlah_frame, 3)
+# print(data[:5])  # Menampilkan 5 data pertama
