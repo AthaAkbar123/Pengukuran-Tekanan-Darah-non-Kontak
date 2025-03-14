@@ -7,7 +7,7 @@ from glob import glob
 from scipy.signal import butter, filtfilt, find_peaks
 
 # Constants
-IMAGE_FOLDER_PATH = os.path.join(os.getcwd(), 'PURE Dataset', '01-01', '01-01')
+IMAGE_FOLDER_PATH = os.path.join(os.getcwd(), "Dataset", "afa2", "rgb" )
 FPS = 30  # Sesuaikan dengan FPS video (simulasi)
 BMI = 24  # Nilai BMI yang diberikan
 
@@ -98,7 +98,7 @@ def get_e_value(signal, peak, valley):
 
 # Main function
 def main():
-    image_files = sorted(glob(os.path.join(IMAGE_FOLDER_PATH, '*.png')))
+    image_files = sorted(glob(os.path.join(IMAGE_FOLDER_PATH, '*.jpg')))
     
     if len(image_files) == 0:
         print("Error: No images found in the folder.")

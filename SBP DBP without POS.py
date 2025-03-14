@@ -1,17 +1,29 @@
-import numpy as np
-import mediapipe as mp
-import cv2
-import matplotlib.pyplot as plt
+import pandas as pd
+from zhou_method_revisi import process_signal, detect_peaks_valleys, compute_E_peak_valley, estimate_bp
 import os
-from glob import glob
-from scipy.signal import butter, filtfilt, find_peaks
+import glob
+import numpy as np
+import cv2
+import mediapipe as mp
+import matplotlib.pyplot as plt
 
-# Constants
-IMAGE_FOLDER_PATH = os.path.join(os.getcwd(), 'PURE Dataset', '01-01', '01-01')
-FPS = 30  # Sesuaikan dengan FPS video (simulasi)
-BMI = 24  # Nilai BMI yang diberikan
 
-# Define ROIs
+subject_path = os.path.join(os.getcwd(), "Dataset", "adin2", "rgb")
+GT_PATH = os.path.join(os.getcwd(), "01-01", "O1-O1.json")
+
+# Path ke file Excel yang berisi data berat dan tinggi badan
+BMI_FILE = os.path.join(os.getcwd(), "Dataset", "Data Master.xlsx")
+
+# Membaca file Excel dan menghitung BMI
+df_bmi = pd.read_excel(BMI_FILE)
+
+# Menambahkan kolom BMI jika belum ada
+if "BMI" not in df_bmi.columns:
+    df_bmi["BMI"] = df_bmi["WEIGHT"] / ((df_bmi["HEIGHT"] ** 2) )
+
+# Membuat dictionary dengan format {nama_folder: BMI}
+bmi_data = {str(row["Nama Folder"]): row["BMI"] for _, row in df_bmi.iterrows()}
+
 def get_roi_definitions():
     return {
         'Jidat': ([54, 63, 109, 107, 338, 336, 293], (255, 0, 0)),
@@ -21,102 +33,103 @@ def get_roi_definitions():
         'Dagu': ([210, 430, 150, 379, 152], (255, 0, 255)),
     }
 
-# Bandpass filter function
-def bandpass_filter(signal, lowcut=0.5, highcut=2.0, fs=FPS, order=5):
-    nyquist = 0.5 * fs
-    low = lowcut / nyquist
-    high = highcut / nyquist
-    b, a = butter(order, [low, high], btype='band')
-    return filtfilt(b, a, signal)
-
-# Extract ROI coordinates
-def extract_roi_coordinates(landmarks, indices, image_width, image_height):
+def extract_roi_coordinates(landmarks, indices, image_width, image_height): 
     points = [landmarks[idx] for idx in indices]
     coords = [(int(point.x * image_width), int(point.y * image_height)) for point in points]
     min_x, max_x = min(pt[0] for pt in coords), max(pt[0] for pt in coords)
     min_y, max_y = min(pt[1] for pt in coords), max(pt[1] for pt in coords)
     return max(0, min_x), max(0, min_y), min(image_width, max_x), min(image_height, max_y)
 
-# Compute rPPG signal
-def compute_rppg_signal(r_signal, g_signal, b_signal):
-    return (r_signal + g_signal + b_signal) / 3
-
-# Calculate SBP & DBP
-def estimate_bp(E_peak, E_valley, bmi):
-    SBP = 23.7889 + 95.4335 * E_peak + 4.5958 * bmi - 5.109 * E_peak * bmi
-    DBP = -17.3772 - 115.1747 * E_valley + 4.0251 * bmi + 5.2825 * E_valley * bmi
-    return SBP, DBP
-
-# Main function
-def main():
-    image_files = sorted(glob(os.path.join(IMAGE_FOLDER_PATH, '*.png')))
+def get_face_mean_rgb(subject_path):
+    """
+    Memproses semua gambar dalam path yang diberikan, mendeteksi wajah menggunakan MediaPipe,
+    menghitung nilai rata-rata RGB dari setiap ROI yang telah didefinisikan,
+    dan mengolah sinyal menjadi SBP & DBP.
+    """
+    folder_name = os.path.basename(subject_path)
+    output_folder = os.path.join(subject_path, "output_roi")
     
-    if len(image_files) == 0:
-        print("Error: No images found in the folder.")
-        return
-    
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    print(f"\n📌 Memproses folder: {folder_name}")
+
+    # Ambil nilai BMI dari file Excel berdasarkan nama folder
+    bmi = bmi_data.get(folder_name, 24)  # Default ke 24 jika tidak ditemukan di file Excel
+
+    image_paths = sorted(glob.glob(os.path.join(subject_path, "*.jpg")))
+
+    if not image_paths:
+        raise ValueError(f"❌ Tidak ditemukan gambar di {subject_path}")
+
     mp_face_mesh = mp.solutions.face_mesh
     face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, refine_landmarks=True)
-    
-    rgb_signals_per_roi = {roi: {'R': [], 'G': [], 'B': []} for roi in get_roi_definitions().keys()}
-    
-    for image_path in image_files:
-        frame = cv2.imread(image_path)
-        if frame is None:
+
+    roi_rgb_values = {roi: {'R': [], 'G': [], 'B': []} for roi in get_roi_definitions().keys()}
+
+    for i, image_path in enumerate(image_paths):
+        image = cv2.imread(image_path)
+        print(f"  ▶ Memproses gambar {i+1}/{len(image_paths)}: {os.path.basename(image_path)}")
+        if image is None:
+            print(f"  ⚠ Peringatan: Tidak dapat membaca gambar {image_path}")
             continue
-        
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = face_mesh.process(frame_rgb)
-        
+
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(image_rgb)
+
         if results.multi_face_landmarks:
-            for face_landmarks in results.multi_face_landmarks:
-                h, w, _ = frame.shape
-                roi_definitions = get_roi_definitions()
-                for roi_name, (indices, color) in roi_definitions.items():
-                    x1, y1, x2, y2 = extract_roi_coordinates(face_landmarks.landmark, indices, w, h)
-                    roi = frame[y1:y2, x1:x2]
-                    if roi.size > 0:
-                        rgb_signals_per_roi[roi_name]['R'].append(np.mean(roi[:, :, 0]))
-                        rgb_signals_per_roi[roi_name]['G'].append(np.mean(roi[:, :, 1]))
-                        rgb_signals_per_roi[roi_name]['B'].append(np.mean(roi[:, :, 2]))
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            face_landmarks = results.multi_face_landmarks[0]
+            h, w, _ = image.shape
+            roi_definitions = get_roi_definitions()
+
+            for roi_name, (indices, color) in roi_definitions.items():
+                x1, y1, x2, y2 = extract_roi_coordinates(face_landmarks.landmark, indices, w, h)
+                roi = image_rgb[y1:y2, x1:x2]
+
+                if roi.size > 0:
+                    mean_rgb = np.mean(roi, axis=(0, 1))
+                    roi_rgb_values[roi_name]['R'].append(mean_rgb[0])
+                    roi_rgb_values[roi_name]['G'].append(mean_rgb[1])
+                    roi_rgb_values[roi_name]['B'].append(mean_rgb[2])
+                else:
+                    print(f"  ⚠ Region kosong di {roi_name} pada {image_path}")
+
+    face_mesh.close()
+
+    for roi_name in roi_rgb_values:
+        npy_path = os.path.join(output_folder, f"{roi_name}_rgb.npy")
+        np.save(npy_path, roi_rgb_values[roi_name])
+        print(f"  ✅ Data RGB {roi_name} disimpan di {npy_path}")
+
+    return roi_rgb_values, bmi
+
+def main():
+    subject_path = os.path.join(os.getcwd(), "Dataset", "adin2", "rgb")
+    
+    mean_rgb_signal, bmi = get_face_mean_rgb(subject_path)
+
+    for roi_name, rgb_values in mean_rgb_signal.items():
+        print(f"\n🔍 Memproses ROI: {roi_name}")
         
-        cv2.imshow('Frame', frame)
-        if cv2.waitKey(500) & 0xFF == ord('q'):
-            break
-    
-    cv2.destroyAllWindows()
-    
-    for roi_name in rgb_signals_per_roi:
-        print(f"Processing ROI: {roi_name}")
-        r_signal = np.array(rgb_signals_per_roi[roi_name]['R'])
-        g_signal = np.array(rgb_signals_per_roi[roi_name]['G'])
-        b_signal = np.array(rgb_signals_per_roi[roi_name]['B'])
+        V_RGB = np.array([rgb_values['R'], rgb_values['G'], rgb_values['B']])
 
-        if len(r_signal) > 10 and len(g_signal) > 10 and len(b_signal) > 10:
-            rppg_signal = compute_rppg_signal(r_signal, g_signal, b_signal)
-            filtered_rppg_signal = bandpass_filter(rppg_signal)
+        S = process_signal(V_RGB)
 
-            # Find peaks and valleys
-            peaks, _ = find_peaks(filtered_rppg_signal)
-            valleys, _ = find_peaks(-filtered_rppg_signal)
-            
-            if len(peaks) > 0 and len(valleys) > 0:
-                E_peak = np.mean(filtered_rppg_signal[peaks])
-                E_valley = np.mean(filtered_rppg_signal[valleys])
-                SBP, DBP = estimate_bp(E_peak, E_valley, BMI)
-                print(f"{roi_name} - Estimated BP: SBP = {SBP:.1f} mmHg, DBP = {DBP:.1f} mmHg")
-            
-            plt.figure(figsize=(15, 5))
-            plt.plot(filtered_rppg_signal, label="Filtered rPPG Signal", color='black', linewidth=2)
-            plt.scatter(peaks, filtered_rppg_signal[peaks], color='red', label="Peaks", marker='o')
-            plt.scatter(valleys, filtered_rppg_signal[valleys], color='blue', label="Valleys", marker='x')
-            plt.title(f"{roi_name} - Filtered rPPG with Peaks and Valleys")
-            plt.xlabel("Frames")
-            plt.ylabel("Intensity")
-            plt.legend()
-            plt.grid(True)
-            plt.show()
+        peaks, valleys = detect_peaks_valleys(S)
+        print(f"📊 ROI {roi_name} - Puncak: {len(peaks)} | Lembah: {len(valleys)}")
 
-if __name__ == '__main__':
+        E_peak, E_valley = compute_E_peak_valley(S, peaks, valleys)
+        print(f"📈 ROI {roi_name} - E_peak: {E_peak} | E_valley: {E_valley}")
+
+        SBP, DBP = estimate_bp(E_peak, E_valley, bmi)
+        print(f"🩺 ROI {roi_name} - SBP: {SBP:.1f} mmHg | DBP: {DBP:.1f} mmHg")
+
+        output_file = os.path.join(subject_path, f"{roi_name}_bp_results.txt")
+        with open(output_file, "w") as f:
+            f.write(f"ROI: {roi_name}\n")
+            f.write(f"SBP: {SBP:.1f} mmHg\n")
+            f.write(f"DBP: {DBP:.1f} mmHg\n")
+        print(f"📂 Hasil SBP & DBP {roi_name} disimpan di {output_file}")
+
+if __name__ == "__main__":
     main()
