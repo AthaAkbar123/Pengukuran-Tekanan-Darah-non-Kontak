@@ -57,5 +57,16 @@ Program ini memerlukan intalasi berupa library Matplotlib, MediaPipe, scipy.sign
 Cara menjalankan program ini cukup run program "ZhouMethod.py" terlebih dahulu. Setelah selesai menjalankan proram, langkah selanjutnya yaitu menjalankan program "processing_pipeline.py". Program nanti akan otomatis menghitung tekanan darah pada masing-masing ROI. Pastikan alamat dari dataset sudah benar.
 
 ## Hasil
-Hasil output keseluruhan  ROI dapat dilihat pada filfe "bp_results_all_rois.csv". Untuk hasil MAE dan RMSE dapat dilihat pada visualisasi di bawah ini:
+Hasil output keseluruhan  ROI dapat dilihat pada file ![bp_results_all_rois.csv](bp_results_all_rois.csv) . Untuk hasil MAE dan RMSE dapat dilihat pada visualisasi di bawah ini:
+![MAE](./MAE.png)
+![RMSE](./RMSE.png)
+
+## Dependencies
+Program ini menggunakan
+* Python versi 3.12.7
+* MediaPipe versi 0.10.20
+
+## Kontak
+* Muhammad Atha Akbar
+* email: athaakbar2908@gmail.com 
 
