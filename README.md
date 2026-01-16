@@ -43,3 +43,19 @@ Pipi Kiri dengan nilai MAE 10.38 mmHg dan nilai RMSE sebesar
 
 ## Struktur Repositori
 <p align="justify">
+Repositori berisi tentang
+* "ZhouMethod.py" yang berisi langkah-langkah dalam memproses sinyal yang telah diambil dari file "processing_pipeline.py"
+* "processing_pipeline.py" berfungsi sebagai ekstraksi sinyal RGB pada gambar-gambar yang ada di dataset
+* "cek MAE RMSE.py" berfungsi sebagai menghitung MAE dan RMSE pada hasil tiap-tiap ROI
+* "bp_resuls_all_rois.csv" berisi hasil yang telah didapat pada masing-masing ROI
+* "bp_resuls_with_errors.csv" berisi hasil beserta selisih dari nilai prediksi dan nilai aktual
+
+## Instalasi
+Program ini memerlukan intalasi berupa library Matplotlib, MediaPipe, scipy.signal, numpy, pandas. Instalasi dapat dilakukan dengan command "conda install library yang diinginkan" pada environment conda anda
+
+## Cara Menjalankan
+Cara menjalankan program ini cukup run program "ZhouMethod.py" terlebih dahulu. Setelah selesai menjalankan proram, langkah selanjutnya yaitu menjalankan program "processing_pipeline.py". Program nanti akan otomatis menghitung tekanan darah pada masing-masing ROI. Pastikan alamat dari dataset sudah benar.
+
+## Hasil
+Hasil output keseluruhan  ROI dapat dilihat pada filfe "bp_results_all_rois.csv". Untuk hasil MAE dan RMSE dapat dilihat pada visualisasi di bawah ini:
+
