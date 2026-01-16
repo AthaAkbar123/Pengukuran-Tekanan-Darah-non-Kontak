@@ -57,8 +57,13 @@ Cara menjalankan program ini cukup run program "ZhouMethod.py" terlebih dahulu. 
 
 ## Hasil
 Hasil output keseluruhan  ROI dapat dilihat pada file ![bp_results_all_rois.csv](bp_results_all_rois.csv) . Untuk hasil MAE dan RMSE dapat dilihat pada visualisasi di bawah ini:
-![MAE](./MAE.png)
-![RMSE](./RMSE.png)
+<div align="center">
+  <img src="MAE.png" width="500">
+</div>
+
+<div align="center">
+  <img src="RMSE.png" width="500">
+</div>
 
 ## Dependencies
 Program ini menggunakan
