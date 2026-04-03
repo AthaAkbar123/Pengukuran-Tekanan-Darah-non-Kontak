@@ -5,9 +5,9 @@ authors:
   - family-names: "Akbar"
     given-names: "Muhamad Atha"
 title: "Komparasi ROI Pada Citra Wajah Orang Indonesia Untuk Pengukuran Tekanan Darah Non-Kontak Berdasarkan Metode Zhou"
-date-released: 2025-01-01 # Ubah dengan tanggal rilis repositori/sidangmu
-url: "https://github.com/AthaAkbar123/Tugas_Akhir" # Ubah dengan URL repositorimu
-repository-code: "https://github.com/AthaAkbar123/Tugas_Akhir"
+date-released: 2025-10-24 # Ubah dengan tanggal rilis repositori/sidangmu
+url: "https://github.com/AthaAkbar123/Pengukuran-Tekanan-Darah-non-Kontak" # Ubah dengan URL repositorimu
+repository-code: "https://github.com/AthaAkbar123/Pengukuran-Tekanan-Darah-non-Kontak"
 type: program
 institution:
   name: "Institut Teknologi Sumatera"
