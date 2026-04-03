@@ -36,7 +36,7 @@ Pipi Kiri dengan nilai MAE 10.38 mmHg dan nilai RMSE sebesar
 ## Fitur & Tujuan Utama
 * Ekstraksi Sinyal rPPG: Mengekstrak sinyal denyut nadi dari video wajah subjek.
 * Pemrosesan Sinyal: Membersihkan sinyal mentah menggunakan teknik seperti detrending, filtering, dan normalisasi.
-* *stimasi Tekanan Darah: Mengimplementasikan model regresi berdasarkan fitur sinyal dan data fisiologis (BMI) untuk memprediksi nilai SBP dan DBP.
+* Estimasi Tekanan Darah: Mengimplementasikan model regresi berdasarkan fitur sinyal dan data fisiologis (BMI) untuk memprediksi nilai SBP dan DBP.
 * Analisis ROI: Menganalisis dan membandingkan kualitas sinyal dari berbagai area di wajah (dahi, pipi, dll.) dengan menggunakan metrik perhitungan MAE dan RMSE
 
 ## Struktur Repositori
@@ -71,8 +71,8 @@ Ikuti langkah-langkah berikut untuk mengatur *environment* dan menginstal depend
 1. **Clone Repositori**
    Buka Terminal atau Anaconda Prompt, lalu unduh repositori ini:
    ```bash
-   git clone [https://github.com/AthaAkbar123/Tugas_Akhir.git](https://github.com/AthaAkbar123/Tugas_Akhir.git)
-   cd Tugas_Akhir
+   git clone [https://github.com/AthaAkbar123/Pengukuran-Tekanan-Darah-non-Kontak.git](https://github.com/AthaAkbar123/Pengukuran-Tekanan-Darah-non-Kontak.git)
+   cd Pengukuran-Tekanan-Darah-non-Kontak
    ```
 
 2. **Buat Virtual Environment**
